@@ -8,7 +8,7 @@ import (
 	"github.com/gorilla/mux"
 )
 
-var todos ToDoList = ToDoList{}
+var todos TodoList = TodoList{}
 
 func getToDoList(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
@@ -16,7 +16,7 @@ func getToDoList(w http.ResponseWriter, r *http.Request) {
 }
 
 func checkToDo(w http.ResponseWriter, r *http.Request) {
-	var todo ToDo = ToDo{}
+	var todo Todo = Todo{}
 	err := json.NewDecoder(r.Body).Decode(&todo)
 
 	if err != nil {
@@ -37,7 +37,7 @@ func checkToDo(w http.ResponseWriter, r *http.Request) {
 }
 
 func addToDo(w http.ResponseWriter, r *http.Request) {
-	var todo ToDo = ToDo{}
+	var todo Todo = Todo{}
 	err := json.NewDecoder(r.Body).Decode(&todo)
 
 	if err != nil {
@@ -57,7 +57,7 @@ func addToDo(w http.ResponseWriter, r *http.Request) {
 
 func deleteByID(w http.ResponseWriter, r *http.Request) {
 	idStr := mux.Vars(r)["id"]
-	id, err := strconv.Atoi(idStr)
+	id, err := strconv.ParseInt(idStr, 10, 64)
 
 	if err != nil {
 		http.Error(w, "failed to convert id to integer", http.StatusBadRequest)
@@ -69,17 +69,39 @@ func deleteByID(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	todo, ok := todos.Entries[id]
+	todo, error := todos.DeleteItemByID(id)
 
-	if !ok {
-		http.Error(w, "no ToDo found with ID: "+idStr, http.StatusBadRequest)
+	if error != nil {
+		http.Error(w, error.Error(), http.StatusBadRequest)
 		return
 	}
 
-	delete(todos.Entries, todo.ID)
+	if todo == nil {
+		http.Error(w, "no todo found with id: "+idStr, http.StatusNotFound)
+		return
+	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(todos)
+}
+
+func editByID(w http.ResponseWriter, r *http.Request) {
+	var t Todo = Todo{}
+	err := json.NewDecoder(r.Body).Decode(&t)
+
+	if err != nil {
+		http.Error(w, "Failed to decode JSON", http.StatusBadRequest)
+		return
+	}
+
+	list, err := todos.EditItem(t)
+
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	json.NewEncoder(w).Encode(list)
 }
 
 func main() {
@@ -91,11 +113,7 @@ func main() {
 	router.HandleFunc("/api/todo/check", checkToDo).Methods("POST")
 	router.HandleFunc("/api/todo/add", addToDo).Methods("POST")
 	router.HandleFunc("/api/todo/delete/{id}", deleteByID).Methods("DELETE")
-
-	// router.HandleFunc("/api/todo/edit", editToDo).Methods("POST")
-
-	// todos = append(todos, Todo{ID: "1", Task: "Learn Go", Status: "In Progress"})
-	// todos = append(todos, Todo{ID: "2", Task: "Learn React", Status: "Not Started"})
+	router.HandleFunc("/api/todo/edit", editByID).Methods("POST")
 
 	http.ListenAndServe(":8000", router)
 }
