@@ -3,13 +3,12 @@ import 'tailwindcss/tailwind.css';
 
 function TodoForm({ task, setTask, todos, setTodos }) {
   
-  function handleSubmit(e) {
-    e.preventDefault();
-    
+  function createNewTodo() {
     const id = parseInt(Date.now().toString());
-    const newTodo = { ID: id, Task: task, Status: 'Pending' };
-    console.log(newTodo);
+    return { ID: id, Task: task, Status: 'Pending' };
+  }
 
+  function addTodo(newTodo) {
     fetch('/api/todo/add', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -17,10 +16,14 @@ function TodoForm({ task, setTask, todos, setTodos }) {
     })
     .then(response => response.json())
     .then(data => {
-      console.log(`Added new task, id=${id}, response: ${JSON.stringify(data)}`);
+      console.log(`Added new task, id=${newTodo.ID}, response: ${JSON.stringify(data)}`);
       setTodos(data);
     });
+  }
 
+  function handleSubmit(e) {
+    e.preventDefault();
+    addTodo(createNewTodo());
     setTask('');
   }
 
