@@ -9,101 +9,85 @@ import (
 	"github.com/gorilla/mux"
 )
 
-var todos TodoList = TodoList{}
+type Status string
 
-func getToDoList(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(todos)
+const (
+	StatusPending   Status = "Pending"
+	StatusCompleted Status = "Completed"
+)
+
+type ToDo struct {
+	ID     int64  `json:"ID"`
+	Task   string `json:"Task"`
+	Status Status `json:"Status"`
 }
 
-func addToDo(w http.ResponseWriter, r *http.Request) {
-	var todo Todo = Todo{}
-	err := json.NewDecoder(r.Body).Decode(&todo)
+type ToDoList struct {
+	Entries map[int64]ToDo `json:"Entries"`
+}
 
-	if err != nil {
-		http.Error(w, "Failed to decode JSON", http.StatusBadRequest)
-		return
+func (l *ToDoList) ToSlice() []ToDo {
+	todos := make([]ToDo, 0, len(l.Entries))
+	for _, todo := range l.Entries {
+		todos = append(todos, todo)
 	}
+	return todos
+}
 
-	list, err := todos.AddItem(&todo)
+var todos = ToDoList{Entries: make(map[int64]ToDo)}
 
-	if err != nil {
+func getTodosHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(todos.ToSlice())
+}
+
+func createTodoHandler(w http.ResponseWriter, r *http.Request) {
+	var todo ToDo
+	if err := json.NewDecoder(r.Body).Decode(&todo); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	todo.ID = int64(len(todos.Entries) + 1)
+	todos.Entries[todo.ID] = todo
 
-	json.NewEncoder(w).Encode(list)
-}
-
-func handleError(w http.ResponseWriter, err error, message string, code int) {
-	if err != nil {
-		http.Error(w, message, code)
-		return
-	}
-}
-
-func encodeJSON(w http.ResponseWriter, data interface{}) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(data)
+	json.NewEncoder(w).Encode(todos.ToSlice())
 }
 
-func parseID(w http.ResponseWriter, r *http.Request) (int64, error) {
-	idStr := mux.Vars(r)["id"]
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		http.Error(w, "failed to convert id to integer", http.StatusBadRequest)
-		return 0, err
-	}
-
-	if id < 0 {
-		http.Error(w, "id must be a positive integer", http.StatusBadRequest)
-		return 0, fmt.Errorf("id must be a positive integer")
-	}
-
-	return id, nil
-}
-
-func deleteByID(w http.ResponseWriter, r *http.Request) {
-	id, err := parseID(w, r)
-	if err != nil {
-		return
-	}
-
-	todo, error := todos.DeleteItemByID(id)
-	handleError(w, error, error.Error(), http.StatusBadRequest)
-
-	if todo == nil {
-		http.Error(w, "no todo found with id: "+strconv.FormatInt(id, 10), http.StatusNotFound)
-		return
-	}
-
-	encodeJSON(w, todos)
-}
-
-func editByID(w http.ResponseWriter, r *http.Request) {
-	var t Todo = Todo{}
-	err := json.NewDecoder(r.Body).Decode(&t)
-	handleError(w, err, "Failed to decode JSON", http.StatusBadRequest)
-
-	list, err := todos.EditItem(t)
-
-	if err != nil {
+func editTodoHandler(w http.ResponseWriter, r *http.Request) {
+	var todo ToDo
+	if err := json.NewDecoder(r.Body).Decode(&todo); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+	todos.Entries[todo.ID] = todo
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(todos.ToSlice())
+}
 
-	encodeJSON(w, list)
+func deleteTodoHandler(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id, err := strconv.ParseInt(vars["id"], 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid ToDo ID", http.StatusBadRequest)
+		return
+	}
+
+	delete(todos.Entries, id)
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(todos.ToSlice())
 }
 
 func main() {
-	router := mux.NewRouter()
+	r := mux.NewRouter()
 
-	todos.CreateList()
+	r.HandleFunc("/api/v1/get/todo", getTodosHandler).Methods("GET")
+	r.HandleFunc("/api/v1/create/todo", createTodoHandler).Methods("POST")
+	r.HandleFunc("/api/v1/edit/todo", editTodoHandler).Methods("POST")
+	r.HandleFunc("/api/v1/delete/todo/{id}", deleteTodoHandler).Methods("DELETE")
 
-	router.HandleFunc("/api/todo", getToDoList).Methods("GET")
-	router.HandleFunc("/api/todo/add", addToDo).Methods("POST")
-	router.HandleFunc("/api/todo/delete/{id}", deleteByID).Methods("DELETE")
-	router.HandleFunc("/api/todo/edit", editByID).Methods("POST")
-
-	http.ListenAndServe(":8000", router)
+	http.Handle("/", r)
+	fmt.Println("Server started at http://localhost:8080")
+	http.ListenAndServe(":8080", r)
 }
