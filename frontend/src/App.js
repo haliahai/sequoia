@@ -5,6 +5,7 @@ import TodoList from './TodoList';
 
 export default function App() {
   const [task, setTask] = useState('');
+  const [description, setDescription] = useState('');
   const [todos, setTodos] = useState([]);
 
   useEffect(() => {
@@ -25,7 +26,7 @@ export default function App() {
         <h1 className="text-center text-3xl font-semibold mb-4">To Do List</h1>
         <div className="md:w-1/2 mx-auto">
           <div className="bg-white shadow-md rounded-lg p-6">
-            <TodoForm task={task} setTask={setTask} todos={todos} setTodos={setTodos} />
+            <TodoForm task={task} setTask={setTask} description={description} setDescription={setDescription} todos={todos} setTodos={setTodos} />
             <TodoList todos={todos} setTodos={setTodos} />
           </div>
         </div>

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 
 	"github.com/gorilla/mux"
@@ -17,9 +18,11 @@ const (
 )
 
 type ToDo struct {
-	ID     int64  `json:"ID"`
-	Task   string `json:"Task"`
-	Status Status `json:"Status"`
+	ID          int64  `json:"ID"`
+	Task        string `json:"Task"`
+	Description string `json:"Description"`
+	CreatedAt   string `json:"CreatedAt"`
+	Status      Status `json:"Status"`
 }
 
 type ToDoList struct {
@@ -31,6 +34,11 @@ func (l *ToDoList) ToSlice() []ToDo {
 	for _, todo := range l.Entries {
 		todos = append(todos, todo)
 	}
+
+	sort.Slice(todos, func(i, j int) bool {
+	    return todos[i].ID < todos[j].ID
+    })
+
 	return todos
 }
 

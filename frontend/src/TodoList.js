@@ -54,15 +54,22 @@ function TodoList({ todos, setTodos }) {
           className="border-b border-gray-200 flex items-center justify-between py-4"
         >
           <label className="flex items-center">
-            <input
-              type="checkbox"
-              className="mr-2"
-              checked={todo.Status === 'Completed'}
-              onChange={() => handleToggle(todo.ID)}
-            />
-            <span className={todo.Status === 'Completed' ? 'line-through' : ''}>
-              {todo.Task}
-            </span>
+            <div>
+                <div>
+                    <input
+                      type="checkbox"
+                      className="mr-2"
+                      checked={todo.Status === 'Completed'}
+                      onChange={() => handleToggle(todo.ID)}
+                    />
+                    <span className={todo.Status === 'Completed' ? 'line-through' : ''}>
+                      {todo.Task}
+                    </span>
+                </div>
+                <div className="text-gray-500">
+                    {todo.Description}
+                </div>
+            </div>
           </label>
           <div>
             <button
