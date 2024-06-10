@@ -7,7 +7,8 @@ function TodoList({ todos, setTodos }) {
   const [currentTodo, setCurrentTodo] = useState(null);
 
   const handleEdit = (id) => {
-    const todo = todos.find((todo) => todo.ID === id);
+    const todo = todos.find(todo => todo.ID === id);
+    console.log(`handleEdit(): id=${id}, task=${todo.Task}, description=${todo.Description}, status=${todo.Status}`)
     setCurrentTodo(todo);
     setIsEditModalOpen(true);
   };
@@ -105,10 +106,10 @@ function TodoList({ todos, setTodos }) {
         isOpen={isEditModalOpen}
         onClose={handleClose}
         onSave={handleSave}
-        id={currentTodo.ID}
-        task={currentTodo.task}
-        description={currentTodo.description}
-        status={currentTodo.status}
+        id={currentTodo ? currentTodo.ID : null}
+        selectedTask={currentTodo ? currentTodo.Task : null}
+        selectedDescription={currentTodo ? currentTodo.Description : null}
+        status={currentTodo ? currentTodo.Status : null}
       />
     </div>
   );

@@ -1,18 +1,26 @@
 import React, { useState, useEffect } from 'react';
 
-const EditModal = ({ isOpen, onClose, onSave, id, initialTask, initialDescription, status }) => {
-  const [task, setTask] = useState(initialTask);
-  const [description, setDescription] = useState(initialDescription);
+const EditModal = ({
+    isOpen,
+    onClose,
+    onSave,
+    id,
+    selectedTask,
+    selectedDescription,
+    status
+  }) => {
+
+  const [task, setTask] = useState(selectedTask);
+  const [description, setDescription] = useState(selectedDescription);
 
   useEffect(() => {
-    if (isOpen) {
-      setTask(initialTask);
-      setDescription(initialDescription);
-    }
-  }, [initialTask, initialDescription, isOpen]);
+    setTask(selectedTask);
+    setDescription(selectedDescription);
+    console.log(`EditModal changed: id=${id}, task=${task}, description=${description}, selectedTask=${selectedTask}, selectedDescription=${selectedDescription}`);
+  }, [isOpen, selectedTask, selectedDescription]);
 
   const handleSave = () => {
-    onSave({ task, description });
+    onSave({ id, task, description, status });
     onClose();
   };
 
@@ -32,7 +40,6 @@ const EditModal = ({ isOpen, onClose, onSave, id, initialTask, initialDescriptio
               value={task}
               onChange={(e) => setTask(e.target.value)}
               className="block w-full mt-1 p-2 border border-gray-300 rounded-md"
-              placeholder={initialTask}
             />
           </div>
           <div className="mb-4">
@@ -44,7 +51,6 @@ const EditModal = ({ isOpen, onClose, onSave, id, initialTask, initialDescriptio
               id="description"
               name="description"
               value={description}
-              placeholder={initialDescription}
               onChange={(e) => setDescription(e.target.value)}
               className="block w-full mt-1 p-2 border border-gray-300 rounded-md"
             />
